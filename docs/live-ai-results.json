@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-23",
+  "environment": "local development server",
+  "model": "gemini-3.5-flash-lite",
+  "mocked": false,
+  "passed": true,
+  "results": [
+    {
+      "name": "email",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 2024
+    },
+    {
+      "name": "meeting-summary",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1414
+    },
+    {
+      "name": "task-plan",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 2235
+    },
+    {
+      "name": "research-knowledge",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 4114
+    },
+    {
+      "name": "research-source",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 2185
+    },
+    {
+      "name": "checkpoint-review",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1296
+    },
+    {
+      "name": "checkpoint-revise",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1320
+    }
+  ]
+}

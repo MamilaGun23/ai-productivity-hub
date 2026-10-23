@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-23",
+  "url": "https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app",
+  "freshBrowserContext": true,
+  "authenticationUsed": false,
+  "pages": [
+    {
+      "route": "/",
+      "status": 200
+    },
+    {
+      "route": "/email",
+      "status": 200
+    },
+    {
+      "route": "/meetings",
+      "status": 200
+    },
+    {
+      "route": "/planner",
+      "status": 200
+    },
+    {
+      "route": "/research",
+      "status": 200
+    },
+    {
+      "route": "/checkpoint",
+      "status": 200
+    },
+    {
+      "route": "/history",
+      "status": 200
+    },
+    {
+      "route": "/settings",
+      "status": 200
+    },
+    {
+      "route": "/about",
+      "status": 200
+    }
+  ],
+  "liveEmailStatus": 200,
+  "editing": true,
+  "copying": true,
+  "checkpointTransfer": true,
+  "clientScriptAssetsChecked": 14,
+  "clientSecretMatches": 0,
+  "pageErrors": [],
+  "passed": true
+}

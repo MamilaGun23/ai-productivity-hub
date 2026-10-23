@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-23",
+  "base": "https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app",
+  "viewports": [320, 768, 1440],
+  "reports": [
+    {
+      "route": "/",
+      "violations": []
+    },
+    {
+      "route": "/email",
+      "violations": []
+    },
+    {
+      "route": "/meetings",
+      "violations": []
+    },
+    {
+      "route": "/planner",
+      "violations": []
+    },
+    {
+      "route": "/research",
+      "violations": []
+    },
+    {
+      "route": "/checkpoint",
+      "violations": []
+    },
+    {
+      "route": "/history",
+      "violations": []
+    },
+    {
+      "route": "/settings",
+      "violations": []
+    },
+    {
+      "route": "/about",
+      "violations": []
+    },
+    {
+      "route": "/ (mobile navigation open)",
+      "violations": []
+    },
+    {
+      "route": "/email (test fixture output)",
+      "violations": []
+    },
+    {
+      "route": "/meetings (test fixture output)",
+      "violations": []
+    },
+    {
+      "route": "/planner (test fixture output)",
+      "violations": []
+    },
+    {
+      "route": "/research (test fixture output)",
+      "violations": []
+    },
+    {
+      "route": "/checkpoint (test fixture output)",
+      "violations": []
+    }
+  ],
+  "pageErrors": []
+}

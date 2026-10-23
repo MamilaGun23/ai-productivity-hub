@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-23",
+  "deploymentId": "dpl_BhKtw4BUc46wq9awX4pag4RF6EEk",
+  "commandSucceeded": true,
+  "filter": "level:error",
+  "window": "5m",
+  "recordsReturned": 0,
+  "summary": {
+    "type": "summary",
+    "recordsReturned": 0,
+    "timeRange": {
+      "start": "2026-10-23T10:28:39.266Z",
+      "end": "2026-10-23T10:33:39.266Z"
+    },
+    "pagination": {
+      "hasMore": false,
+      "next": null
+    },
+    "excludedIntervals": []
+  }
+}

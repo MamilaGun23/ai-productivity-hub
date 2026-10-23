@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-23",
+  "environment": "public production deployment",
+  "url": "https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app",
+  "model": "gemini-3.5-flash-lite",
+  "mocked": false,
+  "passed": true,
+  "results": [
+    {
+      "name": "email",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 5645
+    },
+    {
+      "name": "meeting-summary",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1650
+    },
+    {
+      "name": "task-plan",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 2597
+    },
+    {
+      "name": "research-knowledge",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 3320
+    },
+    {
+      "name": "research-source",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 3081
+    },
+    {
+      "name": "checkpoint-review",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1588
+    },
+    {
+      "name": "checkpoint-revise",
+      "status": 200,
+      "passed": true,
+      "schemaValidated": true,
+      "durationMs": 1714
+    }
+  ]
+}

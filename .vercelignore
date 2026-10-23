@@ -1,0 +1,12 @@
+# Upload application source; keep credentials and local artifacts off the upload.
+.env*
+!.env.example
+.git
+.next
+node_modules
+.vercel
+coverage
+playwright-report
+test-results
+*.log
+*.tsbuildinfo
