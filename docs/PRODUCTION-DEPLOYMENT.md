@@ -39,7 +39,7 @@ Upstash is an optional alternative backend. No Upstash account is required for t
 
 ## Source and remaining actions
 
-Source, lockfile, tests, README, screenshots, ignore rules and CI are prepared. Git is now available at `C:/Program Files/Git/cmd/git.exe`, although it is not on this shell's PATH. A local repository was initialized on `main`; all 71 staged files passed checks for excluded environment/build files and the actual Gemini credential, with zero matches. GitHub remote publication is separate and no remote URL has been fabricated.
+Source, lockfile, tests, README, screenshots, ignore rules and CI are prepared. Git is available at `C:/Program Files/Git/cmd/git.exe`, although it is not on this shell's PATH. The local repository uses `main`; all 71 files passed checks for excluded environment/build files and the actual Gemini credential, with zero matches. The public GitHub repository is https://github.com/MamilaGun23/ai-productivity-hub, and its `origin` remote is configured for publication.
 
 Five development lint-toolchain audit entries remain documented in `VERIFICATION.md`; production dependencies are clean. Automated accessibility checks are not a formal WCAG certification. CAPACITI's acceptance of Next.js/Vercel in place of Lovable still needs separate confirmation. No Teams submission has been sent automatically.
 

@@ -15,9 +15,9 @@
 - [x] README, CI workflow, environment example and Vercel deployment instructions.
 - [x] Live Gemini verification: seven real checks passed across all five modules, both research modes and Checkpoint revision.
 - [x] Public Vercel deployment: READY, public browser access and all five live AI modules verified.
-- [ ] GitHub remote publication; source and repository files are prepared locally.
+- [x] Public GitHub repository created: https://github.com/MamilaGun23/ai-productivity-hub
 
-A Gemini key is configured in ignored `.env.local` and as a server-only Vercel Production Secret. Seven live production checks pass. Vercel CLI access is authorized and the public deployment is READY. Vercel Firewall protection is configured and threshold-tested; Upstash is not required for this deployment. GitHub remote publication remains outstanding.
+A Gemini key is configured in ignored `.env.local` and as a server-only Vercel Production Secret. Seven live production checks pass. Vercel CLI access is authorized and the public deployment is READY. Vercel Firewall protection is configured and threshold-tested; Upstash is not required for this deployment. The public GitHub repository is https://github.com/MamilaGun23/ai-productivity-hub, with its remote configured for source publication.
 
 Public submission URL: https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app
 

@@ -4,7 +4,7 @@ A focused, public AI workspace that brings email writing, meeting summaries, pro
 
 **Live demo:** [Open AI Productivity Hub](https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app) — public access, no registration or local setup.
 
-**Repository:** Source is prepared locally; a GitHub remote has not been published yet.
+**Repository:** [MamilaGun23/ai-productivity-hub](https://github.com/MamilaGun23/ai-productivity-hub)
 
 ## Why this exists
 
@@ -174,7 +174,7 @@ To repeat live checks, start the dev server, set `RUN_LIVE_AI_TESTS=1`, then run
 ## Known limitations
 
 - Live Gemini generation is now verified locally: seven real API checks passed across all five tools, both research modes and Checkpoint revision. Production still requires hosting secrets and a production smoke test.
-- The app is deployed and public. A GitHub remote repository still needs publication; no GitHub URL has been fabricated.
+- The app is deployed and public; the source repository is linked above. CAPACITI's acceptance of the Next.js/Vercel platform substitution still requires separate confirmation.
 - No web search, audio transcription, collaboration, cloud synchronization, or rich-text editor. These are intentional scope limits.
 - Local saves depend on browser storage and device access. Blocked, corrupt, old-version, or full storage is reported; use exports as a backup.
 - Public Vercel Firewall rate limiting is configured and live-verified. Upstash is an optional alternative; its live service has not been configured or tested.
