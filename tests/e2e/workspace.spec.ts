@@ -8,10 +8,10 @@ async function mock(page: Page, feature: keyof typeof outputs) {
 test("dashboard and sidebar navigation", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Your space to do more/ }),
+    page.getByRole("heading", { name: /Turn ideas.*into progress/ }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: /Draft an email/ }),
+    page.getByRole("link", { name: /Smart Email.*Draft an email/ }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Smart Email", exact: true }).click();
   await expect(
@@ -58,35 +58,57 @@ test("email generates, edits, transfers and retains instructions", async ({
 test("meeting extracts editable actions and transfers selected items", async ({
   page,
 }) => {
-  await mock(page, "meetings");
+  await page.route("**/api/transcripts/step", (route) => {
+    const { phase } = route.request().postDataJSON();
+    return route.fulfill({
+      json: {
+        output:
+          phase === "map"
+            ? {
+                summary:
+                  "The team reviewed launch readiness and assigned a checklist review.",
+                participants: ["Alex"],
+                decisions: outputs.meetings.decisions,
+                actionItems: outputs.meetings.actionItems,
+                risks: outputs.meetings.risks,
+                questions: outputs.meetings.questions,
+              }
+            : phase === "reduce"
+              ? {
+                  summary:
+                    "The team reviewed launch readiness and assigned a checklist review.",
+                }
+              : outputs.meetings,
+      },
+    });
+  });
   await page.goto("/meetings");
-  await page
-    .getByLabel("Upload transcript")
-    .setInputFiles({
-      name: "too-large.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.alloc(100001),
-    });
+  await page.getByLabel("Upload meeting transcript").setInputFiles({
+    name: "too-large.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.alloc(25 * 1024 * 1024 + 1),
+  });
   await expect(
-    page.getByRole("alert").filter({ hasText: "100 KB" }),
+    page.getByRole("alert").filter({ hasText: "25 MB" }),
   ).toBeVisible();
-  await page
-    .getByLabel("Upload transcript")
-    .setInputFiles({
-      name: "meeting.vtt",
-      mimeType: "text/vtt",
-      buffer: Buffer.from(
-        "WEBVTT\n\n1\n00:00:00.000 --> 00:00:04.000\nAlex will review the launch checklist. Review is a high priority.",
-      ),
-    });
+  await page.getByLabel("Upload meeting transcript").setInputFiles({
+    name: "meeting.vtt",
+    mimeType: "text/vtt",
+    buffer: Buffer.from(
+      "WEBVTT\n\n1\n00:00:00.000 --> 00:00:04.000\nAlex will review the launch checklist. Review is a high priority.",
+    ),
+  });
   await expect(page.getByLabel("Notes or transcript")).toHaveValue(
-    "Alex will review the launch checklist. Review is a high priority.",
+    /Alex will review the launch checklist. Review is a high priority./,
   );
-  await page.getByRole("button", { name: "Generate summary" }).click();
+  await page.getByRole("button", { name: "Generate meeting summary" }).click();
   await expect(page.getByLabel("Owner", { exact: true })).toHaveValue("Alex");
   await page
     .getByLabel("Description", { exact: true })
     .fill("Review the full checklist");
+  const pdfDownload = page.waitForEvent("download");
+  await page.getByRole("button", {name:"Export PDF",exact:true}).click();
+  expect((await pdfDownload).suggestedFilename()).toMatch(/\.pdf$/);
   await page.getByRole("button", { name: "Plan selected actions" }).click();
   await expect(page.getByLabel("Tasks or requirements")).toHaveValue(
     /Review the full checklist/,
@@ -117,7 +139,7 @@ test("planner supports editing, completion, schedule, save and reload", async ({
   await page.getByRole("button", { name: "Save locally" }).click();
   await page.reload();
   await page.getByRole("link", { name: "History", exact: true }).click();
-  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await page.getByRole("button", { name: /^Open and edit / }).click();
   await expect(
     page.getByLabel("Task title", { exact: true }).first(),
   ).toHaveValue("Design the landing page");
@@ -182,9 +204,9 @@ test("checkpoint preserves revisions and records human decisions", async ({
   await page.reload();
   await page.getByRole("link", { name: "History", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Open", exact: true }),
+    page.getByRole("button", { name: /^Open and edit / }),
   ).toHaveCount(1);
-  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await page.getByRole("button", { name: /^Open and edit / }).click();
   await expect(page.getByText("Rejected", { exact: true })).toBeVisible();
   await expect(
     page.getByLabel("Your feedback or rejection reason"),

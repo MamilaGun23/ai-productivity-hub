@@ -67,16 +67,17 @@ export default function About() {
         </p>
         <p>
           Local history is optional and off by default. Explicitly saved content
-          stays in this browser and is not encrypted by this application. Up to
-          50 items are retained. Clear saved content in{" "}
+          stays in IndexedDB in this browser and is not encrypted by this
+          application. Tasks, events, usage and transcript checkpoints are also
+          stored locally. Nothing syncs across devices. Clear saved content in{" "}
           <Link href="/settings">Settings</Link>; disabling history does not
           delete existing items.
         </p>
         <p>
           Public AI requests use managed rate limiting in production. The
-          limiter stores a hashed network identifier for short-lived request
-          counting. The hosting and AI providers may process operational
-          metadata under their own terms.
+          limiter counts short-lived requests per network address. The hosting
+          and AI providers may process operational metadata under their own
+          terms.
         </p>
       </section>
       <section className="panel settings-panel">

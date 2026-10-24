@@ -87,6 +87,29 @@ try {
     "research",
     "checkpoint",
   ]) {
+    if (feature === "meetings")
+      await page.route("**/api/transcripts/step", (route) => {
+        const { phase } = route.request().postDataJSON();
+        const summary =
+          "The team reviewed the launch checklist and assigned a review to Alex.";
+        return route.fulfill({
+          json: {
+            output:
+              phase === "map"
+                ? {
+                    summary,
+                    participants: ["Alex"],
+                    decisions: outputs.meetings.decisions,
+                    actionItems: outputs.meetings.actionItems,
+                    risks: outputs.meetings.risks,
+                    questions: outputs.meetings.questions,
+                  }
+                : phase === "reduce"
+                  ? { summary }
+                  : outputs.meetings,
+          },
+        });
+      });
     await page.route(`**/api/ai/${feature}`, (route) =>
       route.fulfill({ json: { output: outputs[feature] } }),
     );
@@ -117,7 +140,11 @@ try {
         .getByLabel("Content to review")
         .fill("Please review the project proposal and share feedback.");
     }
-    await page.locator('button[type="submit"]').click();
+    if (feature === "meetings")
+      await page
+        .getByRole("button", { name: "Generate meeting summary", exact: true })
+        .click();
+    else await page.locator('.input-panel button[type="submit"]').click();
     await page.locator(".output-content").waitFor();
     const audit = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
@@ -164,7 +191,7 @@ try {
     process.env.QA_REPORT_PATH || "docs/accessibility-results.json",
     JSON.stringify(
       {
-        date: "2026-10-23",
+        date: new Date().toISOString().slice(0, 10),
         base: process.env.QA_URL || "local production build",
         viewports: [320, 768, 1440],
         reports,

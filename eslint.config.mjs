@@ -9,5 +9,7 @@ export default defineConfig([
     "next-env.d.ts",
     "playwright-report/**",
     "test-results/**",
+    // Vendored PDF.js worker: audited through the pinned dependency, not application lint rules.
+    "public/pdf.worker.min.mjs",
   ]),
 ]);

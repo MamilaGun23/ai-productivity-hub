@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Bound memory and CPU use for browser-like component tests and 25 MiB fixtures.
+    maxWorkers: 2,
     include: ["tests/**/*.test.{ts,tsx}"],
     environment: "node",
     setupFiles: ["./tests/setup.ts"],

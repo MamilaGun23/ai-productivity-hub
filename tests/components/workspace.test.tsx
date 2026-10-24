@@ -15,14 +15,24 @@ const mocks = vi.hoisted(() => ({
   setDraft: vi.fn(),
   push: vi.fn(),
   drafts: {},
+  setExperimentDraft: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock("../../src/components/workspace-provider", () => ({
   useWorkspace: () => ({
     drafts: mocks.drafts,
+    draftLaunches: {},
+    setExperimentDraft: mocks.setExperimentDraft,
     setDraft: mocks.setDraft,
     save: mocks.save,
     enabled: false,
+    experiments: [],
+    saveExperiment: vi.fn().mockResolvedValue(true),
+    removeExperiment: vi.fn().mockResolvedValue(true),
+    recordUsage: vi.fn().mockResolvedValue(true),
+    tasks: [],
+    addTask: vi.fn().mockResolvedValue("task-id"),
+    addTasks: vi.fn().mockResolvedValue(["task-id"]),
   }),
 }));
 afterEach(() => {

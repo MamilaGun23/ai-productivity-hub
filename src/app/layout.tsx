@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import { Shell } from "@/components/shell";
 import { WorkspaceProvider } from "@/components/workspace-provider";
 import "./globals.css";
+import "./liquid-glass.css";
+const geist = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-geist",
+});
 export const metadata: Metadata = {
   title: {
-    default: "AI Productivity Hub — Your space to do more",
+    default: "AI Productivity Hub — Turn ideas into progress",
     template: "%s | AI Productivity Hub",
   },
   description:
@@ -16,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body>
+      <body className={geist.variable}>
         <WorkspaceProvider>
           <Shell>{children}</Shell>
           <Toaster

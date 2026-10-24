@@ -6,6 +6,15 @@ export const outputs: Outputs = {
   },
   meetings: {
     overview: "The team reviewed the launch.",
+    metadata: {
+      title: "Launch review",
+      date: "Not specified",
+      participants: ["Alex"],
+      purpose: "Review launch readiness.",
+    },
+    executiveSummary:
+      "The team reviewed launch readiness. Alex will review the checklist before proceeding.",
+    nextSteps: ["Confirm when the checklist review is complete."],
     discussion: ["Launch readiness"],
     decisions: ["Proceed after review"],
     actionItems: [

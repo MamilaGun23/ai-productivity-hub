@@ -4,6 +4,7 @@ import {
   ShieldCheck,
   Trash2,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
 import { useWorkspace } from "@/components/workspace-provider";
 import { Button, ConfirmDialog } from "@/components/ui";
@@ -21,15 +22,22 @@ export default function Settings() {
         </div>
         <SlidersHorizontal size={28} className="muted" />
       </div>
+      {workspace.storageError && (
+        <p className="error-message" role="alert">
+          {workspace.storageError}
+        </p>
+      )}
       <section className="panel settings-panel">
         <h2>
           <HardDrive size={21} />
           Local workspace history
         </h2>
         <p>
-          Opt in to saving generated drafts, plans, and review decisions in this
-          browser. Saving is explicit: choose Save locally after editing.
-          Nothing is synchronized across devices or saved to our server.
+          Choose whether to save generated drafts, plans, and review decisions.
+          Saved outputs, tasks, calendar events, prompt experiments, and
+          transcript jobs use this browser’s IndexedDB storage. Preferences use
+          localStorage. Nothing is synchronized across devices or saved to our
+          server.
         </p>
         <label className="toggle-row">
           <span>
@@ -37,7 +45,7 @@ export default function Settings() {
             <small>
               {workspace.enabled
                 ? "On — choose what to save"
-                : "Off — work stays in memory until you refresh"}
+                : "Off — generated outputs stay in memory unless exported"}
             </small>
           </span>
           <input
@@ -50,10 +58,28 @@ export default function Settings() {
           />
         </label>
         <p className="muted">
-          Turning this off prevents new saves. Use the delete action below to
-          remove existing saved content. Shared browser users may be able to
-          access saved content.
+          Turning this off prevents new saved AI outputs. Tasks, events, request
+          counts, explicitly saved experiments, and resumable transcript jobs
+          are still stored locally. Shared browser users may access this data.
         </p>
+      </section>
+      <section className="panel settings-panel">
+        <h2>
+          <Download size={21} />
+          Export your workspace
+        </h2>
+        <p>
+          Download a JSON copy of your saved outputs, tasks, calendar events,
+          experiments, usage records, transcript jobs, and active drafts. Keep
+          this file private if it contains personal information.
+        </p>
+        <Button
+          onClick={() => void workspace.exportData()}
+          disabled={!workspace.ready}
+        >
+          <Download size={15} />
+          Export all local data
+        </Button>
       </section>
       <section className="panel settings-panel">
         <h2>
@@ -75,7 +101,7 @@ export default function Settings() {
       <section className="panel settings-panel">
         <h2>
           <Trash2 size={21} />
-          Clear saved content
+          Clear saved history
         </h2>
         <p>
           There are {workspace.entries.length} saved items on this browser.
@@ -84,8 +110,34 @@ export default function Settings() {
         <ConfirmDialog
           title="Permanently clear local history?"
           description="All saved content and review history on this browser will be deleted. This cannot be undone."
-          trigger={<Button variant="danger">Clear all saved content</Button>}
+          trigger={
+            <Button variant="danger" disabled={!workspace.ready}>
+              Clear saved history
+            </Button>
+          }
           onConfirm={workspace.clear}
+        />
+      </section>
+      <section className="panel settings-panel">
+        <h2>
+          <Trash2 size={21} />
+          Clear all local data
+        </h2>
+        <p>
+          This removes {workspace.tasks.length} tasks, {workspace.events.length}{" "}
+          calendar events, {workspace.experiments.length} experiments, saved
+          history, request counts, transcript jobs, active drafts, and the
+          history preference from this browser.
+        </p>
+        <ConfirmDialog
+          title="Permanently clear all local workspace data?"
+          description="Every saved output, task, calendar event, prompt experiment, usage record, and transcript job on this browser will be removed. Download an export first if you want a copy."
+          trigger={
+            <Button variant="danger" disabled={!workspace.ready}>
+              Clear all local data
+            </Button>
+          }
+          onConfirm={() => void workspace.clearAll()}
         />
       </section>
     </div>

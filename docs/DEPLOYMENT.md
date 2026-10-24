@@ -47,10 +47,13 @@ With the Redis adapter selected, production generation returns 503 without both 
 | -------------------------- | ------------------------------------------------------------------------- |
 | `GEMINI_API_KEY`           | Your server-only Gemini secret                                            |
 | `GEMINI_MODEL`             | `gemini-3.5-flash-lite`, or an account-accessible structured-output model |
-| `UPSTASH_REDIS_REST_URL`   | Redis HTTPS REST endpoint                                                 |
-| `UPSTASH_REDIS_REST_TOKEN` | Redis REST secret                                                         |
+| `RATE_LIMIT_PROVIDER`      | `vercel` for the existing managed `ai-generation` rule                    |
+| `UPSTASH_REDIS_REST_URL`   | Optional: only for the alternative Redis adapter                          |
+| `UPSTASH_REDIS_REST_TOKEN` | Optional: only for the alternative Redis adapter                          |
 
 `REQUIRE_RATE_LIMIT` is optional for local verification; production always requires the limiter. No `NEXT_PUBLIC_` secrets are used. Route `maxDuration` is 60 seconds; ensure the selected Vercel plan supports it. Deploy, and wait for Vercel to report a successful Ready state. Environment changes require redeployment.
+
+The redesign adds `/api/transcripts/step` and `/api/experiments`; both share the same validation, 65,000-byte request ceiling and managed allowance. `npm run build` prepares the version-matched PDF worker, fonts and character maps locally. No browser file is uploaded through a serverless function. Large jobs resume from browser IndexedDB while the page is open; they can span many quota windows. See [large transcript operations](LARGE-TRANSCRIPTS.md) before treating a 25-MiB file target as a completion-time promise.
 
 ## 5. Verify public access and live functionality
 
@@ -74,14 +77,14 @@ Add the real repository URL and real public live URL to README and GitHub's Abou
 
 ## Common failures
 
-| Symptom                                    | Next action                                                                         |
-| ------------------------------------------ | ----------------------------------------------------------------------------------- |
-| AI is not configured                       | Set `GEMINI_API_KEY` server-side and restart/redeploy.                              |
-| Generation paused for protection           | Set both Upstash REST values and redeploy.                                          |
-| Model unavailable or authorization failure | Check model spelling, account access, key restrictions, quota and billing.          |
-| Rate limit reached                         | Wait for the 10-minute sliding window; shared networks share one allowance.         |
-| Provider timeout or invalid JSON           | Retry with less input; check model compatibility and provider status.               |
-| Browser history unavailable                | Check storage permissions/quota; clear damaged content in Settings and use exports. |
-| Public site asks for sign-in               | Review production Deployment Protection for this project.                           |
+| Symptom                                    | Next action                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| AI is not configured                       | Set `GEMINI_API_KEY` server-side and restart/redeploy.                                  |
+| Generation paused for protection           | Check the selected managed Firewall rule, or both Redis values when using that adapter. |
+| Model unavailable or authorization failure | Check model spelling, account access, key restrictions, quota and billing.              |
+| Rate limit reached                         | Wait for the 10-minute sliding window; shared networks share one allowance.             |
+| Provider timeout or invalid JSON           | Retry with less input; check model compatibility and provider status.                   |
+| Browser history unavailable                | Check storage permissions/quota; clear damaged content in Settings and use exports.     |
+| Public site asks for sign-in               | Review production Deployment Protection for this project.                               |
 
 Rollback by promoting a previously verified Vercel deployment through the project dashboard; do not overwrite repository history.

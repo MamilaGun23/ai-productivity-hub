@@ -105,7 +105,7 @@ export const taskSchema = z.object({
 });
 export type Task = z.infer<typeof taskSchema>;
 export const actionSchema = z.object({
-  description: z.string().max(3000),
+  description: z.string().min(1).max(3000),
   owner: z.string().max(300),
   deadline: z.string().max(300),
   priority: z.enum(["Low", "Medium", "High", "Not specified"]),
@@ -115,7 +115,7 @@ export type ActionItem = z.infer<typeof actionSchema>;
 const planTasksSchema = z
   .array(taskSchema)
   .min(1)
-  .max(40)
+  .max(5000)
   .refine(
     (tasks) => new Set(tasks.map((task) => task.id)).size === tasks.length,
     "Task identifiers must be unique.",
@@ -137,11 +137,21 @@ export const outputSchemas = {
   }),
   meetings: z.object({
     overview: outputText,
+    metadata: z
+      .object({
+        title: z.string().max(500),
+        date: z.string().max(300),
+        participants: z.array(z.string().max(5000)).max(5000),
+        purpose: outputText,
+      })
+      .optional(),
+    executiveSummary: outputText.optional(),
+    nextSteps: strings.optional(),
     discussion: strings,
-    decisions: strings,
-    actionItems: z.array(actionSchema).max(40),
-    risks: strings,
-    questions: strings,
+    decisions: z.array(z.string().max(5000)).max(5000),
+    actionItems: z.array(actionSchema).max(5000),
+    risks: z.array(z.string().max(5000)).max(5000),
+    questions: z.array(z.string().max(5000)).max(5000),
     assumptions: strings,
   }),
   planner: z.object({

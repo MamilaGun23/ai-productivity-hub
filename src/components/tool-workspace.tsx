@@ -8,7 +8,6 @@ import {
   RotateCcw,
   ShieldCheck,
   FileText,
-  Upload,
   Trash2,
   ArrowUp,
   ArrowDown,
@@ -33,11 +32,28 @@ import {
   formatOutput,
   completion,
   isOverdue,
-  parseTranscript,
-  validateTranscriptFile,
   tasksCsv,
 } from "@/lib/utils";
 import { useWorkspace } from "./workspace-provider";
+import dynamic from "next/dynamic";
+import { PromptExperiments } from "./prompt-experiments";
+import { ToolArt } from "./branding/tool-art";
+import { ResearchTransfer } from "./research-transfer";
+import {
+  actionsToTasks,
+  emailFromTask,
+  prepareTaskImport,
+} from "@/lib/workflows";
+const LargeTranscriptWorkspace = dynamic(
+  () =>
+    import("./transcripts/large-transcript-workspace").then(
+      (m) => m.LargeTranscriptWorkspace,
+    ),
+  {
+    ssr: false,
+    loading: () => <p role="status">Preparing transcript workspace…</p>,
+  },
+);
 import {
   Button,
   CopyButton,
@@ -250,6 +266,15 @@ function newReview(type = "Manual content"): Review {
   };
 }
 export function ToolWorkspace({ feature }: { feature: Feature }) {
+  const workspace = useWorkspace();
+  return (
+    <ToolSession
+      key={`${feature}:${workspace.draftLaunches[feature] ?? 0}`}
+      feature={feature}
+    />
+  );
+}
+function ToolSession({ feature }: { feature: Feature }) {
   const f = getFeature(feature);
   const workspace = useWorkspace();
   const router = useRouter();
@@ -269,6 +294,22 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [view, setView] = useState<"list" | "schedule">("list");
+  const [excludedTasks, setExcludedTasks] = useState<string[]>([]);
+  const [addingTasks, setAddingTasks] = useState(false);
+  const [taskPage, setTaskPage] = useState(0);
+  const [actionPage, setActionPage] = useState(0);
+  const taskCount =
+    feature === "planner" && output
+      ? (output as Outputs["planner"]).tasks.length
+      : 0;
+  const actionCount =
+    feature === "meetings" && output
+      ? (output as Outputs["meetings"]).actionItems.length
+      : 0;
+  const taskStart =
+    Math.min(taskPage, Math.max(0, Math.ceil(taskCount / 20) - 1)) * 20;
+  const actionStart =
+    Math.min(actionPage, Math.max(0, Math.ceil(actionCount / 20) - 1)) * 20;
   const [selected, setSelected] = useState<number[]>(() =>
     feature === "meetings" && workspace.drafts.meetings?.output
       ? (
@@ -352,6 +393,11 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
           "The server returned an invalid response. Please try again.",
         );
       setOutput(parsed.data);
+      void workspace.recordUsage(feature, "success");
+      setExcludedTasks([]);
+      setTaskPage(0);
+      setActionPage(0);
+      if (feature === "planner") updateInput("workspacePlanId", "");
       if (feature === "meetings")
         setSelected(
           (parsed.data as Outputs["meetings"]).actionItems.map((_, i) => i),
@@ -392,6 +438,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
         100,
       );
     } catch (err) {
+      void workspace.recordUsage(feature, "error");
       setError(
         err instanceof Error && /timeout|abort/i.test(err.name)
           ? "The request timed out. Your input is preserved; please try again."
@@ -434,9 +481,67 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
           )
           .join("\n"),
       },
-      output: null,
+      output: {
+        overview:
+          "Review these meeting actions, set any missing dates, then add selected tasks to your workspace.",
+        tasks: actionsToTasks(items),
+        blockers: [],
+        recommendations: [],
+        assumptions: [
+          "Only explicit calendar dates are scheduled. Relative deadlines remain in the task description for your review.",
+        ],
+      },
     });
     router.push("/planner");
+  }
+  async function addSelectedTasks() {
+    if (!output || feature !== "planner" || addingTasks) return;
+    const tasks = (output as Outputs["planner"]).tasks.filter(
+      (t) => !excludedTasks.includes(t.id),
+    );
+    if (!tasks.length) {
+      toast.error("Select at least one task.");
+      return;
+    }
+    const planId = input.workspacePlanId || crypto.randomUUID();
+    updateInput("workspacePlanId", planId);
+    let reviewed: Task[];
+    try {
+      reviewed = prepareTaskImport(
+        (output as Outputs["planner"]).tasks,
+        tasks.map((task) => task.id),
+        planId,
+        workspace.tasks.map((task) => task.id),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Review task prerequisites before adding.",
+      );
+      return;
+    }
+    setAddingTasks(true);
+    const added = await workspace.addTasks(reviewed);
+    setAddingTasks(false);
+    if (!added) return;
+    if (added.length)
+      toast.success(
+        `${added.length} reviewed task${added.length === 1 ? "" : "s"} added to your focus list and calendar`,
+      );
+    else
+      toast.info(
+        "These selected tasks are already in your workspace. Edit them from Today's focus or the calendar.",
+      );
+  }
+  function taskToEmail(task: Task) {
+    workspace.setDraft({
+      feature: "email",
+      title: task.title,
+      input: emailFromTask(task),
+      output: null,
+    });
+    router.push("/email");
   }
   function decide(status: Review["status"]) {
     if (!input.content?.trim()) {
@@ -494,11 +599,11 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
           </h1>
           <p>{f.description}</p>
         </div>
-        <span className="pill">
-          <Sparkles size={13} />
-          GEMINI POWERED
-        </span>
+        <div className="tool-brand-art">
+          <ToolArt feature={feature} />
+        </div>
       </div>
+      {feature === "checkpoint" && <PromptExperiments />}
       <div className="workspace-grid">
         <section className="panel input-panel">
           <div className="panel-header">
@@ -519,7 +624,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
-              void generate();
+              if (feature !== "meetings") void generate();
             }}
             noValidate
           >
@@ -527,6 +632,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
               {fieldConfigs[feature]
                 .filter(
                   (field) =>
+                    !(feature === "meetings" && field.key === "transcript") &&
                     !(
                       feature === "research" &&
                       field.key === "source" &&
@@ -544,6 +650,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                     </span>
                     {field.options ? (
                       <select
+                        aria-label={field.label}
                         value={input[field.key]}
                         onChange={(e) => updateInput(field.key, e.target.value)}
                         disabled={busy}
@@ -562,6 +669,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                       </select>
                     ) : field.type === "textarea" ? (
                       <textarea
+                        aria-label={field.label}
                         disabled={busy || (locked && field.key === "content")}
                         value={input[field.key] || ""}
                         onChange={(e) => updateInput(field.key, e.target.value)}
@@ -576,6 +684,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                       />
                     ) : (
                       <input
+                        aria-label={field.label}
                         value={input[field.key] || ""}
                         onChange={(e) => updateInput(field.key, e.target.value)}
                         placeholder={field.placeholder}
@@ -598,39 +707,26 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                 ))}
             </div>
             {feature === "meetings" && (
-              <label className="upload-control">
-                <Upload size={16} />
-                Import transcript (.txt, .md, .vtt)
-                <input
-                  aria-label="Upload transcript"
-                  type="file"
-                  accept=".txt,.md,.vtt"
-                  disabled={busy}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      validateTranscriptFile(file.name, file.size);
-                      updateInput(
-                        "transcript",
-                        parseTranscript(
-                          file.name,
-                          file.size,
-                          await file.text(),
-                        ),
-                      );
-                      setError("");
-                    } catch (err) {
-                      setError(
-                        err instanceof Error
-                          ? err.message
-                          : "File could not be read.",
-                      );
-                    }
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              <LargeTranscriptWorkspace
+                title={input.title || ""}
+                date={input.date || ""}
+                detail={input.detail || "Standard"}
+                value={input.transcript || ""}
+                jobId={input.transcriptJobId}
+                onChange={(text) => updateInput("transcript", text)}
+                onJobChange={(id) => updateInput("transcriptJobId", id)}
+                onRestoreMetadata={(metadata) =>
+                  setInput((previous) => ({ ...previous, ...metadata }))
+                }
+                onBusyChange={setBusy}
+                onRequestCompleted={(status) => {
+                  void workspace.recordUsage("meetings", status);
+                }}
+                onOutput={(report) => {
+                  setOutput(report);
+                  setSelected(report.actionItems.map((_, i) => i));
+                }}
+              />
             )}
             {feature === "research" && (
               <div className="info-note">
@@ -657,20 +753,26 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                 {error}
               </p>
             )}
-            <div className="form-footer">
-              <Button type="submit" variant="primary" disabled={busy || locked}>
-                <Sparkles size={16} />
-                {busy
-                  ? "Working on it…"
-                  : feature === "checkpoint"
-                    ? "AI-assisted review"
-                    : output
-                      ? "Regenerate"
-                      : `Generate ${feature === "email" ? "email" : feature === "meetings" ? "summary" : feature === "planner" ? "plan" : "research"}`}
-                <ArrowRight size={16} />
-              </Button>
-              <span>Inputs are sent to Google Gemini.</span>
-            </div>
+            {feature !== "meetings" && (
+              <div className="form-footer">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={busy || locked}
+                >
+                  <Sparkles size={16} />
+                  {busy
+                    ? "Working on it…"
+                    : feature === "checkpoint"
+                      ? "AI-assisted review"
+                      : output
+                        ? "Regenerate"
+                        : `Generate ${feature === "email" ? "email" : feature === "planner" ? "plan" : "research"}`}
+                  <ArrowRight size={16} />
+                </Button>
+                <span>Inputs are sent to Google Gemini.</span>
+              </div>
+            )}
             {feature === "checkpoint" && (
               <>
                 <div className="decision-actions">
@@ -759,7 +861,7 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
             </span>
           </div>
           {busy ? (
-            <Loading />
+            <Loading context={feature === "meetings" ? "meeting" : undefined}/>
           ) : !output ? (
             <div className="output-empty">
               <div className={`output-empty-icon ${f.color}`}>
@@ -868,199 +970,248 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                       Schedule
                     </Button>
                   </div>
-                  {(output as Outputs["planner"]).tasks.map((task, i) =>
-                    view === "schedule" ? (
-                      <div className="timeline-item" key={task.id}>
-                        <span>{i + 1}</span>
-                        <div>
-                          <strong>{task.title}</strong>
-                          <p>{task.schedule || "Schedule not specified"}</p>
-                          <small>
-                            {task.estimatedHours} estimated hours ·{" "}
-                            {task.dueDate || "Relative schedule"} ·{" "}
-                            {task.status}
-                          </small>
-                        </div>
-                      </div>
-                    ) : (
-                      <article className="task-card" key={task.id}>
-                        <div className="task-top">
-                          <label className="task-check">
-                            <input
-                              aria-label={`Complete ${task.title}`}
-                              type="checkbox"
-                              checked={task.status === "Completed"}
-                              onChange={(e) =>
-                                updateTask(i, {
-                                  status: e.target.checked
-                                    ? "Completed"
-                                    : "To Do",
-                                })
-                              }
-                            />
-                            <span>Task {i + 1}</span>
-                          </label>
-                          <div className="actions">
-                            <Button
-                              aria-label={`Move task ${i + 1} up`}
-                              disabled={i === 0}
-                              onClick={() => reorder(i, -1)}
-                            >
-                              <ArrowUp size={13} />
-                            </Button>
-                            <Button
-                              aria-label={`Move task ${i + 1} down`}
-                              disabled={
-                                i ===
-                                (output as Outputs["planner"]).tasks.length - 1
-                              }
-                              onClick={() => reorder(i, 1)}
-                            >
-                              <ArrowDown size={13} />
-                            </Button>
-                            <Button
-                              aria-label={`Delete task ${i + 1}`}
-                              variant="danger"
-                              onClick={() =>
-                                setOutput((p) => {
-                                  const plan = p as Outputs["planner"];
-                                  return {
-                                    ...plan,
-                                    tasks: plan.tasks
-                                      .filter((t) => t.id !== task.id)
-                                      .map((t) => ({
-                                        ...t,
-                                        dependencies: t.dependencies.filter(
-                                          (id) => id !== task.id,
-                                        ),
-                                      })),
-                                  };
-                                })
-                              }
-                              disabled={
-                                (output as Outputs["planner"]).tasks.length ===
-                                1
-                              }
-                            >
-                              <Trash2 size={13} />
-                            </Button>
+                  <div className="planner-import">
+                    <h3>Review before adding</h3>
+                    <p>
+                      This is an editable plan. Select the tasks you want, check
+                      their dates, then add them to your real focus list and
+                      calendar.
+                    </p>
+                    <Button
+                      variant="primary"
+                      disabled={addingTasks}
+                      onClick={() => void addSelectedTasks()}
+                    >
+                      {addingTasks
+                        ? "Adding tasks…"
+                        : "Add selected tasks to workspace"}
+                    </Button>
+                  </div>
+                  {(output as Outputs["planner"]).tasks
+                    .map((task, i) => ({ task, i }))
+                    .slice(taskStart, taskStart + 20)
+                    .map(({ task, i }) =>
+                      view === "schedule" ? (
+                        <div className="timeline-item" key={task.id}>
+                          <span>{i + 1}</span>
+                          <div>
+                            <strong>{task.title}</strong>
+                            <p>{task.schedule || "Schedule not specified"}</p>
+                            <small>
+                              {task.estimatedHours} estimated hours ·{" "}
+                              {task.dueDate || "Relative schedule"} ·{" "}
+                              {task.status}
+                            </small>
                           </div>
                         </div>
-                        <label className="field">
-                          <span>Task title</span>
-                          <input
-                            value={task.title}
-                            maxLength={500}
-                            onChange={(e) =>
-                              updateTask(i, { title: e.target.value })
-                            }
-                          />
-                        </label>
-                        <label className="field">
-                          <span>Description</span>
-                          <textarea
-                            value={task.description}
-                            maxLength={30000}
-                            onChange={(e) =>
-                              updateTask(i, { description: e.target.value })
-                            }
-                          />
-                        </label>
-                        <div className="fields-grid">
-                          <label className="field">
-                            <span>Priority</span>
-                            <select
-                              value={task.priority}
-                              onChange={(e) =>
-                                updateTask(i, {
-                                  priority: e.target.value as Task["priority"],
-                                })
-                              }
-                            >
-                              {["Low", "Medium", "High"].map((p) => (
-                                <option key={p}>{p}</option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="field">
-                            <span>Status</span>
-                            <select
-                              value={task.status}
-                              onChange={(e) =>
-                                updateTask(i, {
-                                  status: e.target.value as Task["status"],
-                                })
-                              }
-                            >
-                              {["To Do", "In Progress", "Completed"].map(
-                                (p) => (
-                                  <option key={p}>{p}</option>
-                                ),
-                              )}
-                            </select>
-                          </label>
-                          <label className="field">
-                            <span>Due date</span>
+                      ) : (
+                        <article className="task-card" key={task.id}>
+                          <label className="checkbox-row">
                             <input
-                              type="date"
-                              value={task.dueDate}
+                              type="checkbox"
+                              checked={!excludedTasks.includes(task.id)}
+                              aria-label={`Add ${task.title} to workspace`}
                               onChange={(e) =>
-                                updateTask(i, { dueDate: e.target.value })
-                              }
-                            />
-                            {isOverdue(task.dueDate) &&
-                              task.status !== "Completed" && (
-                                <small className="overdue">Past due</small>
-                              )}
-                          </label>
-                          <label className="field">
-                            <span>Estimated hours</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={10000}
-                              value={task.estimatedHours}
-                              onChange={(e) =>
-                                updateTask(i, {
-                                  estimatedHours: Number(e.target.value),
-                                })
-                              }
-                            />
-                          </label>
-                        </div>
-                        <label className="field">
-                          <span>Suggested schedule</span>
-                          <input
-                            value={task.schedule}
-                            maxLength={1000}
-                            onChange={(e) =>
-                              updateTask(i, { schedule: e.target.value })
-                            }
-                          />
-                        </label>
-                        <p className="task-meta">
-                          Dependencies:{" "}
-                          {task.dependencies.length
-                            ? task.dependencies
-                                .map(
-                                  (id) =>
-                                    (output as Outputs["planner"]).tasks.find(
-                                      (t) => t.id === id,
-                                    )?.title || id,
+                                setExcludedTasks((previous) =>
+                                  e.target.checked
+                                    ? previous.filter((id) => id !== task.id)
+                                    : [...previous, task.id],
                                 )
-                                .join(", ")
-                            : "None"}
-                        </p>
-                        {task.subtasks.length > 0 && (
-                          <ul className="subtasks">
-                            {task.subtasks.map((s, j) => (
-                              <li key={j}>{s}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </article>
-                    ),
-                  )}
+                              }
+                            />
+                            Include in workspace
+                          </label>
+                          <div className="task-top">
+                            <label className="task-check">
+                              <input
+                                aria-label={`Complete ${task.title}`}
+                                type="checkbox"
+                                checked={task.status === "Completed"}
+                                onChange={(e) =>
+                                  updateTask(i, {
+                                    status: e.target.checked
+                                      ? "Completed"
+                                      : "To Do",
+                                  })
+                                }
+                              />
+                              <span>Task {i + 1}</span>
+                            </label>
+                            <div className="actions">
+                              <Button
+                                aria-label={`Move task ${i + 1} up`}
+                                disabled={i === 0}
+                                onClick={() => reorder(i, -1)}
+                              >
+                                <ArrowUp size={13} />
+                              </Button>
+                              <Button
+                                aria-label={`Move task ${i + 1} down`}
+                                disabled={
+                                  i ===
+                                  (output as Outputs["planner"]).tasks.length -
+                                    1
+                                }
+                                onClick={() => reorder(i, 1)}
+                              >
+                                <ArrowDown size={13} />
+                              </Button>
+                              <Button
+                                aria-label={`Delete task ${i + 1}`}
+                                variant="danger"
+                                onClick={() =>
+                                  setOutput((p) => {
+                                    const plan = p as Outputs["planner"];
+                                    return {
+                                      ...plan,
+                                      tasks: plan.tasks
+                                        .filter((t) => t.id !== task.id)
+                                        .map((t) => ({
+                                          ...t,
+                                          dependencies: t.dependencies.filter(
+                                            (id) => id !== task.id,
+                                          ),
+                                        })),
+                                    };
+                                  })
+                                }
+                                disabled={
+                                  (output as Outputs["planner"]).tasks
+                                    .length === 1
+                                }
+                              >
+                                <Trash2 size={13} />
+                              </Button>
+                            </div>
+                          </div>
+                          <label className="field">
+                            <span>Task title</span>
+                            <input
+                              value={task.title}
+                              maxLength={500}
+                              onChange={(e) =>
+                                updateTask(i, { title: e.target.value })
+                              }
+                            />
+                          </label>
+                          <label className="field">
+                            <span>Description</span>
+                            <textarea
+                              value={task.description}
+                              maxLength={30000}
+                              onChange={(e) =>
+                                updateTask(i, { description: e.target.value })
+                              }
+                            />
+                          </label>
+                          <div className="fields-grid">
+                            <label className="field">
+                              <span>Priority</span>
+                              <select
+                                value={task.priority}
+                                onChange={(e) =>
+                                  updateTask(i, {
+                                    priority: e.target
+                                      .value as Task["priority"],
+                                  })
+                                }
+                              >
+                                {["Low", "Medium", "High"].map((p) => (
+                                  <option key={p}>{p}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="field">
+                              <span>Status</span>
+                              <select
+                                value={task.status}
+                                onChange={(e) =>
+                                  updateTask(i, {
+                                    status: e.target.value as Task["status"],
+                                  })
+                                }
+                              >
+                                {["To Do", "In Progress", "Completed"].map(
+                                  (p) => (
+                                    <option key={p}>{p}</option>
+                                  ),
+                                )}
+                              </select>
+                            </label>
+                            <label className="field">
+                              <span>Due date</span>
+                              <input
+                                type="date"
+                                value={task.dueDate}
+                                onChange={(e) =>
+                                  updateTask(i, { dueDate: e.target.value })
+                                }
+                              />
+                              {isOverdue(task.dueDate) &&
+                                task.status !== "Completed" && (
+                                  <small className="overdue">Past due</small>
+                                )}
+                            </label>
+                            <label className="field">
+                              <span>Estimated hours</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={10000}
+                                value={task.estimatedHours}
+                                onChange={(e) =>
+                                  updateTask(i, {
+                                    estimatedHours: Number(e.target.value),
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                          <label className="field">
+                            <span>Suggested schedule</span>
+                            <input
+                              value={task.schedule}
+                              maxLength={1000}
+                              onChange={(e) =>
+                                updateTask(i, { schedule: e.target.value })
+                              }
+                            />
+                          </label>
+                          <p className="task-meta">
+                            Dependencies:{" "}
+                            {task.dependencies.length
+                              ? task.dependencies
+                                  .map(
+                                    (id) =>
+                                      (output as Outputs["planner"]).tasks.find(
+                                        (t) => t.id === id,
+                                      )?.title || id,
+                                  )
+                                  .join(", ")
+                              : "None"}
+                          </p>
+                          {task.subtasks.length > 0 && (
+                            <ul className="subtasks">
+                              {task.subtasks.map((s, j) => (
+                                <li key={j}>{s}</li>
+                              ))}
+                            </ul>
+                          )}
+                          <Button onClick={() => taskToEmail(task)}>
+                            Draft follow-up email <ArrowRight size={14} />
+                          </Button>
+                        </article>
+                      ),
+                    )}
+                  <ResultPagination
+                    kind="tasks"
+                    start={taskStart}
+                    count={taskCount}
+                    previous={() =>
+                      setTaskPage(Math.max(0, taskStart / 20 - 1))
+                    }
+                    next={() => setTaskPage(taskStart / 20 + 1)}
+                  />
                 </>
               ) : feature === "meetings" ? (
                 <>
@@ -1080,8 +1231,10 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                       No action items were identified in the notes.
                     </p>
                   )}
-                  {(output as Outputs["meetings"]).actionItems.map(
-                    (item, i) => (
+                  {(output as Outputs["meetings"]).actionItems
+                    .map((item, i) => ({ item, i }))
+                    .slice(actionStart, actionStart + 20)
+                    .map(({ item, i }) => (
                       <div className="task-card" key={i}>
                         <label className="checkbox-row">
                           <input
@@ -1177,8 +1330,16 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                           Completed
                         </label>
                       </div>
-                    ),
-                  )}
+                    ))}
+                  <ResultPagination
+                    kind="actions"
+                    start={actionStart}
+                    count={actionCount}
+                    previous={() =>
+                      setActionPage(Math.max(0, actionStart / 20 - 1))
+                    }
+                    next={() => setActionPage(actionStart / 20 + 1)}
+                  />
                   <Button onClick={toPlanner}>
                     <ArrowRight size={15} />
                     Plan selected actions
@@ -1197,6 +1358,12 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                   />
                 </>
               )}
+              {feature === "research" && (
+                <ResearchTransfer
+                  output={output as Outputs["research"]}
+                  title={title}
+                />
+              )}
               <div className="output-actions">
                 <Button onClick={() => save()}>
                   <Save size={15} />
@@ -1214,6 +1381,33 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
                     name="plan.csv"
                     mime="text/csv"
                   />
+                )}
+                {feature === "meetings" && (
+                  <>
+                    <ExportButton
+                      text={exportText}
+                      name="meeting-summary.txt"
+                      mime="text/plain"
+                    />
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const { exportMeetingPdf } =
+                            await import("@/lib/transcripts/export");
+                          await exportMeetingPdf(
+                            output as Outputs["meetings"],
+                            title,
+                          );
+                        } catch {
+                          toast.error(
+                            "PDF export failed. Export Markdown or text to keep a copy.",
+                          );
+                        }
+                      }}
+                    >
+                      Export PDF
+                    </Button>
+                  </>
                 )}
                 {feature !== "checkpoint" && (
                   <Button onClick={toCheckpoint}>
@@ -1254,6 +1448,34 @@ export function ToolWorkspace({ feature }: { feature: Feature }) {
     </div>
   );
 }
+function ResultPagination({
+  kind,
+  start,
+  count,
+  previous,
+  next,
+}: {
+  kind: string;
+  start: number;
+  count: number;
+  previous: () => void;
+  next: () => void;
+}) {
+  if (count <= 20) return null;
+  return (
+    <nav className="result-pagination" aria-label={`${kind} pages`}>
+      <Button disabled={start === 0} onClick={previous}>
+        Previous {kind}
+      </Button>
+      <span role="status">
+        {start + 1}–{Math.min(start + 20, count)} of {count} {kind}
+      </span>
+      <Button disabled={start + 20 >= count} onClick={next}>
+        Next {kind}
+      </Button>
+    </nav>
+  );
+}
 function StructuredEditor({
   value,
   onChange,
@@ -1267,41 +1489,57 @@ function StructuredEditor({
     <div className="structured-editor">
       {Object.entries(value)
         .filter(([key]) => key !== "revisedContent")
-        .map(([key, v]) => (
-          <label className="field" key={key}>
-            <span>
-              {key
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (c) => c.toUpperCase())}
-            </span>
-            {readOnlyKeys.includes(key) ? (
-              <span className="basis-label">{String(v)}</span>
-            ) : (
-              <>
-                <textarea
-                  aria-label={key.replace(/([A-Z])/g, " $1")}
-                  rows={
-                    Array.isArray(v)
-                      ? Math.max(2, Math.min(v.length + 1, 7))
-                      : key === "explanation" || key === "analysis"
-                        ? 8
-                        : 4
-                  }
-                  value={Array.isArray(v) ? v.join("\n") : String(v)}
-                  maxLength={Array.isArray(v) ? 30000 : 30000}
-                  onChange={(e) =>
-                    onChange({
-                      [key]: Array.isArray(v)
-                        ? e.target.value.split("\n")
-                        : e.target.value,
-                    })
-                  }
-                />
-                {Array.isArray(v) && <small>One item per line</small>}
-              </>
-            )}
-          </label>
-        ))}
+        .map(([key, v]) =>
+          v && typeof v === "object" && !Array.isArray(v) ? (
+            <section className="structured-group" key={key}>
+              <h3>{key === "metadata" ? "Meeting overview" : key}</h3>
+              <StructuredEditor
+                value={v as Record<string, unknown>}
+                onChange={(patch) => onChange({ [key]: { ...v, ...patch } })}
+              />
+            </section>
+          ) : (
+            <div className="structured-section" key={key}>
+              <label className="field">
+                <span>
+                  {key
+                    .replace(/([A-Z])/g, " $1")
+                    .replace(/^./, (c) => c.toUpperCase())}
+                </span>
+                {readOnlyKeys.includes(key) ? (
+                  <span className="basis-label">{String(v)}</span>
+                ) : (
+                  <>
+                    <textarea
+                      aria-label={key.replace(/([A-Z])/g, " $1")}
+                      rows={
+                        Array.isArray(v)
+                          ? Math.max(2, Math.min(v.length + 1, 7))
+                          : key === "explanation" || key === "analysis"
+                            ? 8
+                            : 4
+                      }
+                      value={Array.isArray(v) ? v.join("\n") : String(v)}
+                      maxLength={Array.isArray(v) ? 30000 : 30000}
+                      onChange={(e) =>
+                        onChange({
+                          [key]: Array.isArray(v)
+                            ? e.target.value.split("\n")
+                            : e.target.value,
+                        })
+                      }
+                    />
+                    {Array.isArray(v) && <small>One item per line</small>}
+                  </>
+                )}
+              </label>
+              <CopyButton
+                text={Array.isArray(v) ? v.join("\n") : String(v ?? "")}
+                label={`Copy ${key.replace(/([A-Z])/g, " $1")}`}
+              />
+            </div>
+          ),
+        )}
     </div>
   );
 }

@@ -77,12 +77,20 @@ export function ResponsibleReminder() {
     </p>
   );
 }
-export function Loading() {
+export function Loading({ context }: { context?: "meeting" } = {}) {
   return (
     <div className="loading" role="status">
       <LoaderCircle className="spin" size={23} />
-      <strong>Making room for your best work</strong>
-      <span>Gemini is preparing your response…</span>
+      <strong>
+        {context === "meeting"
+          ? "Processing your meeting material"
+          : "Making room for your best work"}
+      </strong>
+      <span>
+        {context === "meeting"
+          ? "Follow document extraction and section progress in the input panel."
+          : "Gemini is preparing your response…"}
+      </span>
     </div>
   );
 }
