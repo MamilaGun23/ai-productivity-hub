@@ -1,0 +1,47 @@
+{
+  "application": "AI Productivity Hub",
+  "publishedAt": "2026-10-24T08:23:53.735Z",
+  "url": "https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app",
+  "repository": "https://github.com/MamilaGun23/ai-productivity-hub",
+  "branch": "main",
+  "sourceCommit": "54f6949a3614529f5ea5f22cdc6e93c3423fcfe3",
+  "deployment": {
+    "id": "dpl_3qtAjdH8Ekech3Mfr8U9txUuGi2C",
+    "url": "https://ai-productivity-5pov2upgq-tshifhiwa11austin-4119.vercel.app",
+    "target": "production",
+    "status": "READY",
+    "framework": "Next.js 16.4.2",
+    "promoted": true
+  },
+  "validation": {
+    "unitIntegrationTests": 93,
+    "browserTests": 19,
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "accessibilityStates": 15,
+    "accessibilityViolations": 0,
+    "publicAnonymousRoutes": 9,
+    "liveAIRequests": 6,
+    "liveAIRequestsSuccessful": 6,
+    "productionDependencyVulnerabilities": 0
+  },
+  "runtimeErrorScan": {
+    "query": "level:error",
+    "deploymentId": "dpl_3qtAjdH8Ekech3Mfr8U9txUuGi2C",
+    "start": "2026-10-24T08:18:19.733Z",
+    "end": "2026-10-24T08:23:19.733Z",
+    "recordsReturned": 0,
+    "paginationHasMore": false
+  },
+  "githubActions": {
+    "runURL": "https://github.com/MamilaGun23/ai-productivity-hub/actions/runs/40077586027",
+    "status": "not started",
+    "reason": "GitHub reports the account is locked due to a billing issue."
+  },
+  "limitations": [
+    "Large transcript jobs run in the foreground with browser-local resumable checkpoints.",
+    "AI operations share a 10-request-per-10-minute production allowance; large jobs can require multiple windows.",
+    "Scanned PDFs require external OCR. Browser-local data does not sync between devices."
+  ]
+}

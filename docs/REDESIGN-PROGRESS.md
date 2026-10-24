@@ -11,7 +11,7 @@ This is an incremental redesign of the existing Next.js/Gemini application. The 
 | Large transcripts | Browser extraction, bounded requests, hierarchical summaries, saved IndexedDB jobs, cancellation/resume, Markdown/text/PDF export. | Exact 25-MiB full pipeline, extraction, storage and recovery checks passed. |
 | Connected flows | Meeting action review to planner; selected plans to real tasks/calendar; research and task email prefills. | Cross-tool browser checks passed. |
 | Quality | Unit/integration, browser, accessibility, production build and credential checks. | 93 unit/integration tests, 19 E2E tests; TypeScript, ESLint and build passed. Zero automated accessibility violations or configured-secret matches. |
-| Deployment readiness | Preserve existing Vercel runtime and production rate control; document infrastructure limits. | Local release checks complete; publication tracked in the root progress file. |
+| Deployment readiness | Preserve existing Vercel runtime and production rate control; document infrastructure limits. | Production build published; live Gemini workflows and nine anonymous public routes passed. GitHub Actions is blocked by an account billing lock. |
 
 See [IMPLEMENTATION_PROGRESS.md](../IMPLEMENTATION_PROGRESS.md) for the current release status and verification reports.
 

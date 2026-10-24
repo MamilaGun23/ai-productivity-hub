@@ -1,0 +1,76 @@
+{
+  "baseURL": "https://ai-productivity-hub-tshifhiwa11austin-4119.vercel.app",
+  "checkedAt": "2026-10-24T08:22:45.218Z",
+  "routes": [
+    {
+      "path": "/",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/email",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/meetings",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/planner",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/research",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/checkpoint",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/history",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/settings",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    },
+    {
+      "path": "/about",
+      "status": 200,
+      "anonymous": true,
+      "securityHeaders": true
+    }
+  ],
+  "assets": [
+    {
+      "path": "/pdf.worker.min.mjs",
+      "status": 200
+    },
+    {
+      "path": "/fonts/NotoSans-Regular.ttf",
+      "status": 200
+    },
+    {
+      "path": "/brand/icon-dark.svg",
+      "status": 200
+    }
+  ],
+  "browserErrors": [],
+  "passed": true
+}

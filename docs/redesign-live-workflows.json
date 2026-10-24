@@ -1,0 +1,43 @@
+{
+  "baseURL": "https://ai-productivity-5pov2upgq-tshifhiwa11austin-4119.vercel.app",
+  "checkedAt": "2026-10-24T08:21:24.009Z",
+  "requests": [
+    {
+      "path": "/api/transcripts/step",
+      "phase": "map",
+      "status": 200
+    },
+    {
+      "path": "/api/transcripts/step",
+      "phase": "map",
+      "status": 200
+    },
+    {
+      "path": "/api/transcripts/step",
+      "phase": "reduce",
+      "status": 200
+    },
+    {
+      "path": "/api/transcripts/step",
+      "phase": "final",
+      "status": 200
+    },
+    {
+      "path": "/api/experiments",
+      "status": 200
+    },
+    {
+      "path": "/api/experiments",
+      "status": 200
+    }
+  ],
+  "checks": {
+    "anonymousAccess": true,
+    "liveHierarchicalMeeting": true,
+    "explicitOwnersRetained": true,
+    "unspecifiedDatePreserved": true,
+    "liveActionsTransferred": true,
+    "livePromptGenerationAndRefinement": true,
+    "passed": true
+  }
+}
